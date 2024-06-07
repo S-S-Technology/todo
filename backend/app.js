@@ -55,6 +55,17 @@ app.get("/todofetch", async (req, res) => {
   }
 });
 
+app.put("/todoupdate", async (req, res) => {
+  try {
+    const todos = await db.update().from(todo).wh;
+
+    res.status(200).json(todos);
+  } catch (error) {
+    console.error("Error fetching todos:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 wss.on("connection", async (ws) => {
   try {
     console.log("A client connected.");
@@ -65,7 +76,7 @@ wss.on("connection", async (ws) => {
 
     ws.on("message", async (message) => {
       try {
-        // Handle incoming WebSocket messages here
+        console.log(todos);
       } catch (error) {
         console.error("Error parsing WebSocket message:", error);
       }
