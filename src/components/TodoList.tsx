@@ -1,17 +1,29 @@
-// TodoList.tsx
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import TodoForm from "./TodoForm";
 import { useTodoStore } from "../stores/todo/";
 import EditModal from "./EditModal";
-import { Todo } from "../stores/todo/interface";
 import axios from "axios";
 
 const TodoList = () => {
   const [showEditForm, setShowEditForm] = useState(false);
-  const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
+  const [selectedTodo, setSelectedTodo] = useState(null);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+  const [todos, setTodos] = useState([]);
 
-  const todos = useTodoStore((state) => state.todos);
+  useEffect(() => {
+    const fetchTodos = async () => {
+      try {
+        const response = await axios.get("http://localhost:3000/todofetch");
+        const fetchedTodos = response.data;
+        setTodos(fetchedTodos);
+      } catch (error) {
+        console.error("Error fetching todos:", error);
+      }
+    };
+
+    fetchTodos();
+  }, []);
+
   const addTodo = useTodoStore((state) => state.addTodo);
   const removeTodo = useTodoStore((state) => state.removeTodo);
   const updateTodo = useTodoStore((state) => state.updateTodo);
@@ -24,7 +36,7 @@ const TodoList = () => {
     setShowAddTaskModal(false);
   };
 
-  const handleEdit = (todo: Todo) => {
+  const handleEdit = (todo: any) => {
     setSelectedTodo(todo);
     setShowEditForm(true);
   };
@@ -34,14 +46,9 @@ const TodoList = () => {
     setSelectedTodo(null);
   };
 
-  const handleRemove = (id: number) => {
+  const handleRemove = (id: any) => {
     removeTodo(id);
   };
-
-  // Group todos based on their status
-  const pendingTodos = todos.filter((todo) => todo.status === "pending");
-  const completedTodos = todos.filter((todo) => todo.status === "completed");
-  const ongoingTodos = todos.filter((todo) => todo.status === "Ongoing");
 
   return (
     <div className="container mx-auto p-4">
@@ -69,44 +76,16 @@ const TodoList = () => {
           </div>
         </div>
       )}
-      {/* Render todos for each status */}
+      {/* Render todos */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {/* Pending todos section */}
-        <div>
-          <h2 className="text-xl font-bold mb-2">Pending</h2>
-          {pendingTodos.map((todo) => (
-            <TodoItem
-              key={todo.id}
-              todo={todo}
-              handleEdit={handleEdit}
-              handleRemove={handleRemove}
-            />
-          ))}
-        </div>
-        {/* Completed todos section */}
-        <div>
-          <h2 className="text-xl font-bold mb-2">Completed</h2>
-          {completedTodos.map((todo) => (
-            <TodoItem
-              key={todo.id}
-              todo={todo}
-              handleEdit={handleEdit}
-              handleRemove={handleRemove}
-            />
-          ))}
-        </div>
-        {/* In progress todos section */}
-        <div>
-          <h2 className="text-xl font-bold mb-2">In Progress</h2>
-          {ongoingTodos.map((todo) => (
-            <TodoItem
-              key={todo.id}
-              todo={todo}
-              handleEdit={handleEdit}
-              handleRemove={handleRemove}
-            />
-          ))}
-        </div>
+        {todos.map((todo) => (
+          <TodoItem
+            key={todo.id}
+            todo={todo}
+            handleEdit={handleEdit}
+            handleRemove={handleRemove}
+          />
+        ))}
       </div>
       {/* Render edit modal */}
       {showEditForm && (
@@ -120,12 +99,8 @@ const TodoList = () => {
   );
 };
 
-const TodoItem: React.FC<{
-  todo: Todo;
-  handleEdit: (todo: Todo) => void;
-  handleRemove: (id: number) => void;
-}> = ({ todo, handleEdit, handleRemove }) => {
-  const getStatusColor = (status: string) => {
+const TodoItem = ({ todo, handleEdit, handleRemove }) => {
+  const getStatusColor = (status) => {
     switch (status) {
       case "pending":
         return "bg-blue-500";
@@ -140,8 +115,7 @@ const TodoItem: React.FC<{
 
   return (
     <div className="bg-yellow-100 rounded-lg shadow-md p-4 mb-4">
-      {/* Added mb-4 for margin bottom */}
-      <h2 className="text-lg font-semibold">{todo.text}</h2>
+      <h2 className="text-lg font-semibold">{todo.title}</h2>
       <p className="text-sm text-gray-500">{todo.description}</p>
       <div
         className={`text-sm font-bold inline-block px-2 py-1 rounded ${getStatusColor(
