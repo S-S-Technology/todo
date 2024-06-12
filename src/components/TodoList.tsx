@@ -100,7 +100,7 @@ const TodoList = () => {
 };
 
 const TodoItem = ({ todo, handleEdit, handleRemove }) => {
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: any) => {
     switch (status) {
       case "pending":
         return "bg-blue-500";

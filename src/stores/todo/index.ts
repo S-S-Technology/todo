@@ -16,7 +16,7 @@ export const useTodoStore = create<TodoStore>((set) => ({
         ...state.todos,
         {
           id: Date.now(),
-          text: todo.text,
+          title: todo.title,
           description: todo.description || "",
           status: todo.status || "",
         },

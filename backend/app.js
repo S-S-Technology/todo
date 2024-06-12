@@ -57,7 +57,7 @@ app.get("/todofetch", async (req, res) => {
 
 app.put("/todoupdate", async (req, res) => {
   try {
-    const todos = await db.update().from(todo).wh;
+    const todos = await db.update().from(todo).set();
 
     res.status(200).json(todos);
   } catch (error) {
