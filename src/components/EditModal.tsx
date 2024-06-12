@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Todo } from "../stores/todo/interface";
+import useWebSocket, { ReadyState } from "react-use-websocket";
+
 interface EditModalProps {
   todo: Todo;
   onClose: () => void;
@@ -7,9 +9,15 @@ interface EditModalProps {
 }
 
 const EditModal: React.FC<EditModalProps> = ({ todo, onClose, onSubmit }) => {
-  const [editedText, setEditedText] = useState(todo.text);
+  const [editedText, setEditedText] = useState(todo.title);
   const [editedDescription, setEditedDescription] = useState(todo.description);
   const [editedStatus, setEditedStatus] = useState(todo.status);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const { sendJsonMessage, readyState } = useWebSocket(
+    "ws://localhost:3000/todo"
+  );
 
   const handleTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setEditedText(event.target.value);
@@ -25,16 +33,37 @@ const EditModal: React.FC<EditModalProps> = ({ todo, onClose, onSubmit }) => {
     setEditedStatus(event.target.value as "pending" | "completed");
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    onSubmit(todo.id, {
-      text: editedText,
+    // Validate the input
+    if (!editedText.trim()) {
+      setError("Title cannot be empty");
+      return;
+    }
+
+    setIsLoading(true);
+
+    const updatedTodo: Partial<Todo> = {
+      title: editedText,
       description: editedDescription,
       status: editedStatus,
-    });
+    };
 
-    onClose();
+    sendJsonMessage(
+      JSON.stringify({ action: "UPDATE_TODO", id: todo.id, todo: updatedTodo })
+    );
+
+    try {
+      // Call the onSubmit function passed from props
+      await onSubmit(todo.id, updatedTodo);
+      onClose();
+    } catch (error) {
+      console.error("Error updating todo:", error);
+      setError("Failed to update todo. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -81,6 +110,8 @@ const EditModal: React.FC<EditModalProps> = ({ todo, onClose, onSubmit }) => {
             </select>
           </div>
 
+          {error && <p className="text-red-500 mb-4">{error}</p>}
+
           <div className="flex justify-end">
             <button
               type="button"
@@ -92,8 +123,13 @@ const EditModal: React.FC<EditModalProps> = ({ todo, onClose, onSubmit }) => {
             <button
               type="submit"
               className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
+              disabled={readyState !== ReadyState.OPEN || isLoading}
             >
-              Save
+              {isLoading
+                ? "Saving..."
+                : readyState === ReadyState.CONNECTING
+                ? "Connecting..."
+                : "Save"}
             </button>
           </div>
         </form>

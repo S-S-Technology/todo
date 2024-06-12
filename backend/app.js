@@ -28,40 +28,53 @@ app.post("/todo", async (req, res) => {
   try {
     const { title, description, status } = req.body;
 
-    await db.insert(todo).values({
+    const newTodo = {
+      id: Math.random().toString(36).substr(2, 9),
       title,
       description,
       status,
-    });
+    };
+
+    await db.insert(todo).values(newTodo);
 
     // Notify connected WebSocket clients about the new todo
     notifyTodos();
 
-    res.status(201).json({ message: "Todo added successfully" });
+    res.status(201).json({ message: "Todo added successfully", todo: newTodo });
   } catch (error) {
     console.error("Error adding todo:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-app.get("/todofetch", async (req, res) => {
+app.put("/todoupdate/:id", async (req, res) => {
   try {
-    const todos = await db.select().from(todo);
+    const { id } = req.params;
+    const { title, description, status } = req.body;
 
-    res.status(200).json(todos);
+    await db.update(todo).set({ title, description, status }).where({ id });
+
+    notifyTodos();
+
+    res.status(200).json({ message: "Todo updated successfully" });
   } catch (error) {
-    console.error("Error fetching todos:", error);
+    console.error("Error updating todo:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-app.put("/todoupdate", async (req, res) => {
+app.delete("/tododelete/:id", async (req, res) => {
   try {
-    const todos = await db.update().from(todo).set();
+    const { id } = req.params;
 
-    res.status(200).json(todos);
+    await db.delete(todo).where({ id });
+
+    // Notify connected WebSocket clients about the removed todo
+    notifyTodos();
+
+    res.status(200).json({ message: "Todo deleted successfully" });
   } catch (error) {
-    console.error("Error fetching todos:", error);
+    console.error("Error deleting todo:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -76,7 +89,7 @@ wss.on("connection", async (ws) => {
 
     ws.on("message", async (message) => {
       try {
-        console.log(todos);
+        console.log(message);
       } catch (error) {
         console.error("Error parsing WebSocket message:", error);
       }
