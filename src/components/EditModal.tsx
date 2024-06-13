@@ -5,7 +5,7 @@ import useWebSocket, { ReadyState } from "react-use-websocket";
 interface EditModalProps {
   todo: Todo;
   onClose: () => void;
-  onSubmit: (id: number, updatedTodo: Partial<Todo>) => void;
+  onSubmit: (id: number, updatedTodo: Partial<Todo>) => Promise<void>;
 }
 
 const EditModal: React.FC<EditModalProps> = ({ todo, onClose, onSubmit }) => {
@@ -49,10 +49,6 @@ const EditModal: React.FC<EditModalProps> = ({ todo, onClose, onSubmit }) => {
       description: editedDescription,
       status: editedStatus,
     };
-
-    sendJsonMessage(
-      JSON.stringify({ action: "UPDATE_TODO", id: todo.id, todo: updatedTodo })
-    );
 
     try {
       // Call the onSubmit function passed from props

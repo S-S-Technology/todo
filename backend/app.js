@@ -5,6 +5,7 @@ import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import { db } from "./db/db_config.js";
 import { todo } from "./schema/todoschema.js";
+import { eq } from "drizzle-orm";
 
 dotenv.config();
 
@@ -37,7 +38,6 @@ app.post("/todo", async (req, res) => {
 
     await db.insert(todo).values(newTodo);
 
-    // Notify connected WebSocket clients about the new todo
     notifyTodos();
 
     res.status(201).json({ message: "Todo added successfully", todo: newTodo });
@@ -52,10 +52,27 @@ app.put("/todoupdate/:id", async (req, res) => {
     const { id } = req.params;
     const { title, description, status } = req.body;
 
-    await db.update(todo).set({ title, description, status }).where({ id });
+    // Log the received values for debugging
+    console.log("Received update request for todo with ID:", id);
+    console.log("New title:", title);
+    console.log("New description:", description);
+    console.log("New status:", status);
+
+    // Check if any required fields are empty
+    if (!title || !description || !status) {
+      console.error("Error updating todo: Missing required fields");
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Perform the update operation
+    await db
+      .update(todo)
+      .set({ title, description, status })
+      .where(eq(todo.id, id));
 
     notifyTodos();
 
+    // Respond with success message
     res.status(200).json({ message: "Todo updated successfully" });
   } catch (error) {
     console.error("Error updating todo:", error);
@@ -69,7 +86,6 @@ app.delete("/tododelete/:id", async (req, res) => {
 
     await db.delete(todo).where({ id });
 
-    // Notify connected WebSocket clients about the removed todo
     notifyTodos();
 
     res.status(200).json({ message: "Todo deleted successfully" });

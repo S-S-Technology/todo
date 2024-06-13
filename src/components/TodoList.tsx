@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import TodoForm from "./TodoForm";
 import EditModal from "./EditModal";
 import axios from "axios";
-import useWebSocket, { ReadyState } from "react-use-websocket";
+import useWebSocket from "react-use-websocket";
 
 const TodoList = () => {
   const [showEditForm, setShowEditForm] = useState(false);
   const [selectedTodo, setSelectedTodo] = useState(null);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [todos, setTodos] = useState([]);
-  const { sendJsonMessage, lastMessage, readyState } = useWebSocket(
+  const { sendJsonMessage, lastMessage } = useWebSocket(
     "ws://localhost:3000/todo"
   );
 
@@ -53,22 +53,9 @@ const TodoList = () => {
     }
   };
 
-  const updateTodo = async (updatedTodo: any) => {
+  const updateTodo = async (id: any, updatedTodo: any) => {
     try {
-      // Log the updatedTodo object for debugging
-      console.log("Updated Todo:", updatedTodo);
-
-      await axios.put(
-        `http://localhost:3000/todoupdate/${updatedTodo.id}`,
-        updatedTodo
-      );
-      sendJsonMessage(
-        JSON.stringify({
-          action: "UPDATE_TODO",
-          id: updatedTodo.id,
-          todo: updatedTodo,
-        })
-      );
+      await axios.put(`http://localhost:3000/todoupdate/${id}`, updatedTodo);
     } catch (error) {
       console.error("Error updating todo:", error);
     }
@@ -82,8 +69,8 @@ const TodoList = () => {
     setShowAddTaskModal(false);
   };
 
-  const handleEdit = (todo) => {
-    setSelectedTodo(todo);
+  const handleEdit = (todo: any) => {
+    setSelectedTodo(todo); // Make sure the todo object contains the 'id' property
     setShowEditForm(true);
   };
 
