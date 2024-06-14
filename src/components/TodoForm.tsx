@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 
@@ -10,7 +10,7 @@ const TodoForm = ({ onClose }) => {
     "ws://192.168.1.117:3000"
   );
 
-  const handleSubmit = (event) => {
+  const handleSubmit = (event: any) => {
     event.preventDefault();
     const newTodo = {
       id: uuidv4(),

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import useWebSocket, { ReadyState } from "react-use-websocket";
+import useWebSocket from "react-use-websocket";
 import TodoForm from "./TodoForm";
 import EditModal from "./EditModal";
 import { Todo } from "../stores/todo/interface";
@@ -9,7 +9,7 @@ const TodoList: React.FC = () => {
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [todos, setTodos] = useState<Todo[]>([]);
-  const { sendJsonMessage, lastMessage, readyState } = useWebSocket(
+  const { sendJsonMessage, lastMessage } = useWebSocket(
     "ws://192.168.1.117:3000/todo",
     {
       onOpen: () => {
@@ -37,7 +37,7 @@ const TodoList: React.FC = () => {
     }
   }, [lastMessage]);
 
-  const addTodo = (newTodo: Partial<Todo>) => {
+  const addTodo = (newTodo: any) => {
     sendJsonMessage({ action: "ADD_TODO", todo: newTodo });
   };
 
@@ -45,7 +45,7 @@ const TodoList: React.FC = () => {
     sendJsonMessage({ action: "DELETE_TODO", id });
   };
 
-  const updateTodo = (id: string, updatedTodo: Partial<Todo>) => {
+  const updateTodo = (id: string, updatedTodo: any) => {
     sendJsonMessage({ action: "UPDATE_TODO", id, todo: updatedTodo });
   };
 

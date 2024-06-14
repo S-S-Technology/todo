@@ -12,19 +12,11 @@ const EditModal: React.FC<EditModalProps> = ({ todo, onClose }) => {
   const [editedDescription, setEditedDescription] = useState(todo.description);
   const [editedStatus, setEditedStatus] = useState(todo.status);
   const { sendJsonMessage, readyState } = useWebSocket(
-    "ws://192.168.1.117:3000" // Adjust WebSocket URL as needed
+    "ws://192.168.1.117:3000" 
   );
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    // Construct the updated todo object
-    const updatedTodo: Partial<Todo> = {
-      id: todo.id,
-      title: editedText,
-      description: editedDescription,
-      status: editedStatus,
-    };
 
     try {
       // Send the updated todo fields directly
