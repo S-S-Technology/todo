@@ -5,60 +5,40 @@ import useWebSocket, { ReadyState } from "react-use-websocket";
 interface EditModalProps {
   todo: Todo;
   onClose: () => void;
-  onSubmit: (id: number, updatedTodo: Partial<Todo>) => Promise<void>;
 }
 
-const EditModal: React.FC<EditModalProps> = ({ todo, onClose, onSubmit }) => {
+const EditModal: React.FC<EditModalProps> = ({ todo, onClose }) => {
   const [editedText, setEditedText] = useState(todo.title);
   const [editedDescription, setEditedDescription] = useState(todo.description);
   const [editedStatus, setEditedStatus] = useState(todo.status);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const { sendJsonMessage, readyState } = useWebSocket(
-    "ws://localhost:3000/todo"
+    "ws://192.168.1.117:3000" // Adjust WebSocket URL as needed
   );
-
-  const handleTextChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setEditedText(event.target.value);
-  };
-
-  const handleDescriptionChange = (
-    event: React.ChangeEvent<HTMLTextAreaElement>
-  ) => {
-    setEditedDescription(event.target.value);
-  };
-
-  const handleStatusChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setEditedStatus(event.target.value as "pending" | "completed");
-  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    // Validate the input
-    if (!editedText.trim()) {
-      setError("Title cannot be empty");
-      return;
-    }
-
-    setIsLoading(true);
-
+    // Construct the updated todo object
     const updatedTodo: Partial<Todo> = {
+      id: todo.id,
       title: editedText,
       description: editedDescription,
       status: editedStatus,
     };
 
     try {
-      // Call the onSubmit function passed from props
-      await onSubmit(todo.id, updatedTodo);
-      onClose();
+      // Send the updated todo fields directly
+      sendJsonMessage({
+        action: "UPDATE_TODO",
+        id: todo.id,
+        title: editedText,
+        description: editedDescription,
+        status: editedStatus,
+      });
+
+      onClose(); // Close the modal after sending the update
     } catch (error) {
       console.error("Error updating todo:", error);
-      setError("Failed to update todo. Please try again later.");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -74,7 +54,7 @@ const EditModal: React.FC<EditModalProps> = ({ todo, onClose, onSubmit }) => {
             <input
               type="text"
               value={editedText}
-              onChange={handleTextChange}
+              onChange={(e) => setEditedText(e.target.value)}
               className="border border-gray-300 rounded-md py-2 px-4 w-full"
             />
           </div>
@@ -83,10 +63,9 @@ const EditModal: React.FC<EditModalProps> = ({ todo, onClose, onSubmit }) => {
             <label className="block text-sm font-medium text-gray-700">
               Description
             </label>
-
             <textarea
               value={editedDescription}
-              onChange={handleDescriptionChange}
+              onChange={(e) => setEditedDescription(e.target.value)}
               className="border border-gray-300 rounded-md py-2 px-4 w-full"
             />
           </div>
@@ -97,7 +76,9 @@ const EditModal: React.FC<EditModalProps> = ({ todo, onClose, onSubmit }) => {
             </label>
             <select
               value={editedStatus}
-              onChange={handleStatusChange}
+              onChange={(e) =>
+                setEditedStatus(e.target.value as Todo["status"])
+              }
               className="border border-gray-300 rounded-md py-2 px-4 w-full"
             >
               <option value="pending">Pending</option>
@@ -105,8 +86,6 @@ const EditModal: React.FC<EditModalProps> = ({ todo, onClose, onSubmit }) => {
               <option value="ongoing">Ongoing</option>
             </select>
           </div>
-
-          {error && <p className="text-red-500 mb-4">{error}</p>}
 
           <div className="flex justify-end">
             <button
@@ -119,13 +98,9 @@ const EditModal: React.FC<EditModalProps> = ({ todo, onClose, onSubmit }) => {
             <button
               type="submit"
               className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
-              disabled={readyState !== ReadyState.OPEN || isLoading}
+              disabled={readyState !== ReadyState.OPEN}
             >
-              {isLoading
-                ? "Saving..."
-                : readyState === ReadyState.CONNECTING
-                ? "Connecting..."
-                : "Save"}
+              Save
             </button>
           </div>
         </form>

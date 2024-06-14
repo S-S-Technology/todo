@@ -1,31 +1,18 @@
-import React, { useEffect, useState } from "react";
-import { Todo } from "../stores/todo/interface";
+import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import axios from "axios";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 
-interface TodoFormProps {
-  onClose: () => void;
-}
-
-const TodoForm: React.FC<TodoFormProps> = ({ onClose }) => {
+const TodoForm = ({ onClose }) => {
   const [text, setText] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<"pending" | "completed" | "Ongoing">(
-    "pending"
+  const [status, setStatus] = useState("pending");
+  const { sendJsonMessage, readyState } = useWebSocket(
+    "ws://192.168.1.117:3000"
   );
 
-  const { sendMessage, lastMessage, readyState } = useWebSocket(
-    "ws://localhost:3000/todo"
-  );
-
-  useEffect(() => {
-    console.log("Last Message", lastMessage);
-  });
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event) => {
     event.preventDefault();
-    const newTodo: Todo = {
+    const newTodo = {
       id: uuidv4(),
       title: text,
       description,
@@ -33,11 +20,8 @@ const TodoForm: React.FC<TodoFormProps> = ({ onClose }) => {
     };
 
     try {
-      await axios.post("http://localhost:3000/todo", newTodo);
-
-      sendMessage(JSON.stringify({ action: "ADD_TODO", payload: newTodo }));
-
-      onClose();
+      sendJsonMessage({ action: "ADD_TODO", todo: newTodo });
+      onClose(); // Close the form
     } catch (error) {
       console.error("Error adding todo:", error);
     }
@@ -77,14 +61,12 @@ const TodoForm: React.FC<TodoFormProps> = ({ onClose }) => {
           </label>
           <select
             value={status}
-            onChange={(e) =>
-              setStatus(e.target.value as "pending" | "completed" | "Ongoing")
-            }
+            onChange={(e) => setStatus(e.target.value)}
             className="border border-gray-300 rounded-md py-2 px-4 w-full"
           >
             <option value="pending">Pending</option>
             <option value="completed">Completed</option>
-            <option value="Ongoing">Ongoing</option>
+            <option value="ongoing">Ongoing</option>
           </select>
         </div>
         <div className="flex justify-end">
@@ -100,7 +82,7 @@ const TodoForm: React.FC<TodoFormProps> = ({ onClose }) => {
             className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
             disabled={readyState !== ReadyState.OPEN}
           >
-            {readyState === ReadyState.CONNECTING ? "Connecting..." : "Save"}
+            Save
           </button>
         </div>
       </form>

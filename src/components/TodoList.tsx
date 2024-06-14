@@ -1,64 +1,52 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import useWebSocket, { ReadyState } from "react-use-websocket";
 import TodoForm from "./TodoForm";
 import EditModal from "./EditModal";
-import axios from "axios";
-import useWebSocket from "react-use-websocket";
+import { Todo } from "../stores/todo/interface";
 
-const TodoList = () => {
+const TodoList: React.FC = () => {
   const [showEditForm, setShowEditForm] = useState(false);
-  const [selectedTodo, setSelectedTodo] = useState(null);
+  const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
-  const [todos, setTodos] = useState([]);
-  const { sendJsonMessage, lastMessage } = useWebSocket(
-    "ws://localhost:3000/todo"
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const { sendJsonMessage, lastMessage, readyState } = useWebSocket(
+    "ws://192.168.1.117:3000/todo",
+    {
+      onOpen: () => {
+        console.log("WebSocket connection opened.");
+        fetchTodos();
+      },
+      onClose: () => console.log("WebSocket connection closed."),
+      onError: (error) => console.error("WebSocket error:", error),
+    }
   );
 
-  useEffect(() => {
-    const fetchTodos = async () => {
-      try {
-        const response = await axios.get("http://localhost:3000/todofetch");
-        const fetchedTodos = response.data;
-        setTodos(fetchedTodos);
-      } catch (error) {
-        console.error("Error fetching todos:", error);
-      }
-    };
-
-    fetchTodos();
-  }, []);
+  const fetchTodos = useCallback(() => {
+    sendJsonMessage({ action: "FETCH_TODOS" });
+  }, [sendJsonMessage]);
 
   useEffect(() => {
-    if (lastMessage && lastMessage.data) {
+    if (lastMessage?.data) {
       const messageData = JSON.parse(lastMessage.data);
-      if (messageData && messageData.todos) {
+      console.log("Received message:", messageData);
+      if (messageData.todos) {
         setTodos(messageData.todos);
+      } else {
+        console.log("No todos in messageData");
       }
     }
   }, [lastMessage]);
 
-  const addTodo = async (newTodo: any) => {
-    try {
-      await axios.post("http://localhost:3000/todo", newTodo);
-    } catch (error) {
-      console.error("Error adding todo:", error);
-    }
+  const addTodo = (newTodo: Partial<Todo>) => {
+    sendJsonMessage({ action: "ADD_TODO", todo: newTodo });
   };
 
-  const removeTodo = async (id: any) => {
-    try {
-      await axios.delete(`http://localhost:3000/tododelete/${id}`);
-      sendJsonMessage(JSON.stringify({ action: "DELETE_TODO", id }));
-    } catch (error) {
-      console.error("Error removing todo:", error);
-    }
+  const removeTodo = (id: string) => {
+    sendJsonMessage({ action: "DELETE_TODO", id });
   };
 
-  const updateTodo = async (id: any, updatedTodo: any) => {
-    try {
-      await axios.put(`http://localhost:3000/todoupdate/${id}`, updatedTodo);
-    } catch (error) {
-      console.error("Error updating todo:", error);
-    }
+  const updateTodo = (id: string, updatedTodo: Partial<Todo>) => {
+    sendJsonMessage({ action: "UPDATE_TODO", id, todo: updatedTodo });
   };
 
   const handleAddTaskClick = () => {
@@ -69,8 +57,8 @@ const TodoList = () => {
     setShowAddTaskModal(false);
   };
 
-  const handleEdit = (todo: any) => {
-    setSelectedTodo(todo); // Make sure the todo object contains the 'id' property
+  const handleEdit = (todo: Todo) => {
+    setSelectedTodo(todo);
     setShowEditForm(true);
   };
 
